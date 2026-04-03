@@ -3,102 +3,165 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>FixCity — Community posts &amp; map</title>
+    <title>FixCity — Local problem reporter</title>
+    <meta
+      name="description"
+      content="FixCity: report local issues with photos and GPS. Map, AI triage, neighbors, and municipality status."
+    />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                50: "#eef2ff",
+                100: "#e0e7ff",
+                200: "#c7d2fe",
+                300: "#a5b4fc",
+                400: "#818cf8",
+                500: "#6366f1",
+                600: "#4f46e5",
+                700: "#4338ca",
+                800: "#3730a3",
+                900: "#312e81",
+              },
+            },
+          },
+        },
+      };
+    </script>
+
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       crossorigin=""
     />
-    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="stylesheet" href="/css/tailwind-overrides.css" />
   </head>
-  <body>
-    <nav class="site-nav">
-      <a class="site-nav__brand" href="/"><strong>FixCity</strong></a>
-      <div id="nav-mount" class="site-nav__mount"></div>
+  <body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
+    <nav class="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur">
+      <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+        <a href="/" class="flex items-center gap-2">
+          <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 text-white font-black">F</span>
+          <span class="font-extrabold tracking-tight">FixCity</span>
+        </a>
+        <div id="nav-mount" class="flex flex-wrap items-center gap-3"></div>
+      </div>
     </nav>
 
-    <header class="hero">
-      <div class="hero__inner">
-        <p class="eyebrow">Hackathon demo</p>
-        <h1>Neighborhood posts</h1>
-        <p class="lede">
-          Browse problems on the map and in the feed. See triage, community
-          votes, and chat on each card.
+    <header class="relative overflow-hidden">
+      <div class="absolute inset-0 bg-gradient-to-br from-brand-600 via-brand-700 to-slate-900"></div>
+      <div class="absolute -top-24 right-[-6rem] h-72 w-72 rounded-full bg-white/10 blur-2xl"></div>
+      <div class="absolute -bottom-24 left-[-6rem] h-72 w-72 rounded-full bg-white/10 blur-2xl"></div>
+
+      <div class="relative mx-auto max-w-6xl px-4 py-12">
+        <p class="text-xs font-semibold uppercase tracking-widest text-white/70">FixCity</p>
+        <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+          Report local issues. See them on the map.
+        </h1>
+        <p class="mt-3 max-w-2xl text-white/80">
+          FixCity is your local problem reporter: photos, GPS, and AI triage for garbage, roads, water, and more.
+          Vote on urgency, chat with neighbors, and follow status updates from your municipality.
         </p>
-        <p class="hero__cta">
-          <a class="btn btn--primary" href="/report">Report a new problem</a>
-          <a class="btn btn--ghost" href="/profile">My profile</a>
-        </p>
+        <div class="mt-6 flex flex-wrap gap-3">
+          <a
+            href="/report"
+            class="inline-flex items-center justify-center rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 shadow hover:bg-slate-50"
+            >Report a new problem</a
+          >
+          <a
+            href="/profile"
+            class="inline-flex items-center justify-center rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/15"
+            >My profile</a
+          >
+        </div>
       </div>
     </header>
 
-    <main class="layout layout--feed">
-      <section class="panel feed-panel" aria-labelledby="feed-title">
-        <div id="flash" class="flash" role="status" aria-live="polite" hidden></div>
+    <main class="mx-auto max-w-6xl px-4 py-8">
+      <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="p-5 sm:p-6">
+          <div id="flash" role="status" aria-live="polite" hidden></div>
 
-        <div class="panel__head">
-          <h2 id="feed-title">All posts</h2>
-          <div class="panel__actions">
-            <button type="button" class="btn btn--ghost btn--sm" id="btn-nearby">
-              Near me (10 km)
-            </button>
-            <button type="button" class="btn btn--ghost btn--sm" id="btn-all">
-              Show all
-            </button>
-            <button type="button" class="btn btn--ghost btn--sm" id="btn-refresh">
-              Refresh
-            </button>
+          <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h2 class="text-lg font-bold">Reported problems</h2>
+              <p class="mt-1 text-sm text-slate-600">Newest first. Map dots match AI priority (high / medium / low).</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                id="btn-nearby"
+                class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Near me (10 km)
+              </button>
+              <button
+                type="button"
+                id="btn-all"
+                class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Show all
+              </button>
+              <button
+                type="button"
+                id="btn-refresh"
+                class="rounded-xl bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow hover:bg-brand-700"
+              >
+                Refresh
+              </button>
+            </div>
           </div>
-        </div>
-        <p id="filter-hint" class="hint filter-hint" hidden></p>
-        <label class="live-poll-label hint">
-          <input type="checkbox" id="chk-live" checked />
-          <span
-            ><strong>Demo live sync</strong> (~22s):
-            <a href="/authority">Authority console</a> status updates appear
-            here automatically.</span
-          >
-        </label>
-        <p class="hint">
-          Newest first. Dots follow triage <strong>priority</strong>.
-          <a href="/report">Submit your own report →</a>
-        </p>
 
-        <div class="map-panel">
-          <h3 class="map-title">Urgency map</h3>
-          <p class="hint map-caption">
-            OpenStreetMap. Only posts with GPS show as markers.
-          </p>
-          <div class="map-legend" aria-label="Marker colors by urgency">
-            <span class="leg-item"><i class="sw sw--high"></i> High</span>
-            <span class="leg-item"><i class="sw sw--med"></i> Medium</span>
-            <span class="leg-item"><i class="sw sw--low"></i> Low</span>
-            <span class="leg-item"><i class="sw sw--na"></i> Unclassified</span>
+          <p id="filter-hint" class="mt-3 text-sm font-semibold text-brand-700" hidden></p>
+
+          <div class="mt-6 grid gap-4 lg:grid-cols-5">
+            <div class="lg:col-span-3">
+              <div class="flex items-center justify-between">
+                <h3 class="text-sm font-semibold text-slate-700">Urgency map</h3>
+                <div class="hidden flex-wrap items-center gap-3 text-xs text-slate-600 sm:flex">
+                  <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-red-600"></span>High</span>
+                  <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>Medium</span>
+                  <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-emerald-600"></span>Low</span>
+                  <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-slate-500"></span>Unclassified</span>
+                </div>
+              </div>
+              <p class="mt-1 text-xs text-slate-500">OpenStreetMap tiles. Only posts with GPS show markers.</p>
+              <div class="mt-3 overflow-hidden rounded-2xl border border-slate-200">
+                <div id="map" role="application" aria-label="Map of reported problems"></div>
+              </div>
+            </div>
+
+            <div class="lg:col-span-2">
+              <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <p class="text-sm text-slate-700">
+                  Want to add a new issue?
+                  <a class="font-semibold text-brand-700 hover:underline" href="/report">Open the report form</a>.
+                </p>
+                <p class="mt-2 text-xs text-slate-500">
+                  Tip: include GPS and a clear photo for better triage and faster community response.
+                </p>
+              </div>
+            </div>
           </div>
-          <div
-            id="map"
-            class="map"
-            role="application"
-            aria-label="Map of reported problems"
-          ></div>
-        </div>
 
-        <div id="feed" class="feed" aria-live="polite"></div>
+          <div class="mt-6" id="feed" aria-live="polite"></div>
+        </div>
       </section>
+
+      <footer class="mt-10 text-center text-xs text-slate-500">
+        <p>
+          <a class="font-semibold text-brand-700 hover:underline" href="/report">New report</a> ·
+          <a class="font-semibold text-brand-700 hover:underline" href="/signup">Sign up</a> ·
+          <a class="font-semibold text-brand-700 hover:underline" href="/authority/login">Staff login</a>
+        </p>
+      </footer>
     </main>
 
-    <footer class="footer">
-      <p>
-        <a href="/report">New report</a> ·
-        <a href="/authority">Authority console</a> ·
-        <a href="/signup">Sign up</a>
-      </p>
-    </footer>
-
-    <script
-      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-      crossorigin=""
-    ></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <script src="/js/nav.js" defer></script>
     <script src="/js/feed.js" defer></script>
   </body>

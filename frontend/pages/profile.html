@@ -3,29 +3,81 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>My posts — FixCity</title>
-    <link rel="stylesheet" href="/css/styles.css" />
+    <title>Profile — FixCity</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/tailwind-overrides.css" />
   </head>
-  <body>
-    <nav class="site-nav">
-      <a class="site-nav__brand" href="/"><strong>FixCity</strong></a>
-      <div id="nav-mount" class="site-nav__mount"></div>
+  <body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
+    <nav class="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur">
+      <div class="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-3">
+        <a href="/" class="flex items-center gap-2">
+          <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white font-black">F</span>
+          <span class="font-extrabold tracking-tight">FixCity</span>
+        </a>
+        <div id="nav-mount" class="flex flex-wrap items-center gap-3"></div>
+      </div>
     </nav>
 
-    <main class="profile-main">
-      <header class="profile-header">
-        <h1 id="profile-title">My activity</h1>
-        <p id="profile-sub" class="hint">Loading…</p>
+    <main class="mx-auto max-w-3xl px-4 py-10">
+      <header class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="flex flex-col gap-6 sm:flex-row sm:items-start">
+          <div class="flex shrink-0 flex-col items-center gap-2 sm:items-start">
+            <div
+              id="profile-avatar-wrap"
+              class="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-2 border-slate-200 bg-slate-100 text-2xl font-bold text-slate-500"
+            >
+              <span id="profile-avatar-letter">?</span>
+              <img id="profile-avatar-img" class="hidden h-full w-full object-cover" alt="" />
+            </div>
+            <form id="form-avatar" class="w-full max-w-[12rem]">
+              <label class="block">
+                <span class="sr-only">Profile photo</span>
+                <input
+                  id="input-avatar"
+                  name="avatar"
+                  type="file"
+                  accept="image/png,image/jpeg,image/gif,image/webp"
+                  class="block w-full text-xs text-slate-600 file:mr-2 file:rounded-lg file:border-0 file:bg-indigo-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-indigo-700"
+                />
+              </label>
+              <button
+                type="submit"
+                class="mt-2 w-full rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800"
+              >
+                Save photo
+              </button>
+            </form>
+          </div>
+          <div class="min-w-0 flex-1">
+            <h1 id="profile-title" class="text-2xl font-extrabold tracking-tight">Profile</h1>
+            <p id="profile-sub" class="mt-1 text-sm text-slate-600">Loading…</p>
+            <p id="profile-flash" class="mt-3 hidden rounded-xl border px-3 py-2 text-sm" role="status"></p>
+            <div class="mt-4 flex flex-wrap gap-3">
+              <a
+                href="/report"
+                class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow hover:bg-indigo-700"
+                >New report</a
+              >
+              <a
+                href="/"
+                class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >Browse posts</a
+              >
+            </div>
+          </div>
+        </div>
       </header>
 
-      <div id="profile-feed" class="social-feed" aria-live="polite"></div>
-    </main>
+      <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-slate-500">Your reports</h2>
+      <div id="profile-feed" class="mt-4 space-y-6" aria-live="polite"></div>
 
-    <footer class="footer">
-      <p><a href="/">Back to map &amp; feed</a></p>
-    </footer>
+      <footer class="mt-10 text-center text-xs text-slate-500">
+        <p><a class="font-semibold text-indigo-700 hover:underline" href="/">Back to map & feed</a></p>
+      </footer>
+    </main>
 
     <script src="/js/nav.js" defer></script>
     <script src="/js/profile.js" defer></script>
   </body>
 </html>
+

@@ -1,35 +1,64 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Log in — FixCity</title>
-    <link rel="stylesheet" href="/css/styles.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/tailwind-overrides.css" />
   </head>
-  <body>
-    <nav class="site-nav">
-      <a class="site-nav__brand" href="/"><strong>FixCity</strong></a>
-      <div id="nav-mount" class="site-nav__mount"></div>
+  <body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
+    <nav class="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur">
+      <div class="mx-auto flex max-w-md items-center justify-between gap-4 px-4 py-3">
+        <a href="/" class="flex items-center gap-2">
+          <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white font-black">F</span>
+          <span class="font-extrabold tracking-tight">FixCity</span>
+        </a>
+        <div id="nav-mount" class="flex flex-wrap items-center gap-3"></div>
+      </div>
     </nav>
 
-    <main class="auth-main">
-      <section class="panel auth-panel">
-        <h1>Log in</h1>
-        <p class="hint">Use the email and password you signed up with.</p>
-        <div id="flash" class="flash" role="status" aria-live="polite" hidden></div>
-        <form id="login-form" class="form">
-          <label class="field">
-            <span class="field__label">Email</span>
-            <input type="email" name="email" required autocomplete="email" />
+    <main class="mx-auto max-w-md px-4 py-10">
+      <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h1 class="text-xl font-extrabold">Log in</h1>
+        <p class="mt-1 text-sm text-slate-600">Use the email and password you signed up with.</p>
+
+        <div id="flash" role="status" aria-live="polite" hidden></div>
+
+        <form id="login-form" class="mt-6 grid gap-4">
+          <label class="block">
+            <span class="text-sm font-semibold text-slate-800">Email</span>
+            <input
+              type="email"
+              name="email"
+              required
+              autocomplete="email"
+              class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-100"
+            />
           </label>
-          <label class="field">
-            <span class="field__label">Password</span>
-            <input type="password" name="password" required autocomplete="current-password" />
+
+          <label class="block">
+            <span class="text-sm font-semibold text-slate-800">Password</span>
+            <input
+              type="password"
+              name="password"
+              required
+              autocomplete="current-password"
+              class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-100"
+            />
           </label>
-          <button type="submit" class="btn btn--primary">Log in</button>
+
+          <button
+            type="submit"
+            class="mt-2 inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow hover:bg-indigo-700"
+          >
+            Log in
+          </button>
         </form>
-        <p class="hint">
-          New here? <a href="/signup">Create an account</a>
+
+        <p class="mt-5 text-sm text-slate-600">
+          New here?
+          <a class="font-semibold text-indigo-700 hover:underline" href="/signup">Create an account</a>
         </p>
       </section>
     </main>
@@ -39,11 +68,17 @@
       (function () {
         var form = document.getElementById("login-form");
         var flash = document.getElementById("flash");
+
         function show(msg, ok) {
           flash.hidden = false;
           flash.textContent = msg;
-          flash.className = "flash " + (ok ? "flash--ok" : "flash--err");
+          flash.className =
+            "mt-4 rounded-2xl border px-4 py-3 text-sm " +
+            (ok
+              ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+              : "border-rose-200 bg-rose-50 text-rose-900");
         }
+
         form.addEventListener("submit", async function (e) {
           e.preventDefault();
           var fd = new FormData(form);
@@ -66,7 +101,13 @@
               return;
             }
             show("Success! Redirecting…", true);
-            window.location.href = "/profile";
+            var url = new URL(window.location.href);
+            var rt = url.searchParams.get("return_to");
+            if (rt && rt.startsWith("/")) {
+              window.location.href = rt;
+            } else {
+              window.location.href = "/profile";
+            }
           } catch (err) {
             show("Network error.", false);
           }

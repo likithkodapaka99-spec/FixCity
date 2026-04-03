@@ -1,19 +1,28 @@
 """Signup, login (session cookie), and current-user endpoints."""
 from __future__ import annotations
 
+import os
 import re
 
-from flask import Blueprint, jsonify, request, session
+from flask import Blueprint, current_app, jsonify, request, session
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
 
 from app.extensions import db
 from app.models import Report, User
+from app import storage
 
 bp = Blueprint("auth", __name__)
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+_ALLOWED_AVATAR = {"png", "jpg", "jpeg", "gif", "webp"}
+
+
+def _avatar_ext_ok(filename: str) -> bool:
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in _ALLOWED_AVATAR
 
 
 @bp.post("/api/auth/signup")
@@ -42,6 +51,7 @@ def signup():
         display_name=name[:120],
         email=email,
         password_hash=generate_password_hash(password),
+        role="citizen",
     )
     db.session.add(user)
     db.session.commit()
@@ -82,11 +92,49 @@ def me():
     uid = session.get("user_id")
     if not uid:
         return jsonify({"error": "not authenticated"}), 401
-    user = db.session.get(User, uid)
+    user = db.session.get(User, int(uid))
     if not user:
         session.clear()
         return jsonify({"error": "not authenticated"}), 401
     return jsonify(user.to_public_dict())
+
+
+@bp.post("/api/auth/avatar")
+def upload_avatar():
+    """multipart: field `avatar` (or `file`) — image; replaces previous avatar file."""
+    uid = session.get("user_id")
+    if not uid:
+        return jsonify({"error": "not authenticated"}), 401
+    user = db.session.get(User, int(uid))
+    if not user:
+        session.clear()
+        return jsonify({"error": "not authenticated"}), 401
+
+    f = request.files.get("avatar") or request.files.get("file")
+    if not f or not f.filename:
+        return jsonify({"error": "image file is required"}), 400
+    safe = secure_filename(f.filename)
+    if not _avatar_ext_ok(safe):
+        return jsonify({"error": "Unsupported image type"}), 400
+
+    folder = current_app.config["UPLOAD_FOLDER"]
+    new_name = storage.unique_upload_name(safe)
+    path = os.path.join(folder, new_name)
+    f.save(path)
+
+    old = user.avatar_filename
+    user.avatar_filename = new_name
+    db.session.commit()
+
+    if old and old != new_name:
+        old_path = os.path.join(folder, old)
+        try:
+            if os.path.isfile(old_path):
+                os.remove(old_path)
+        except OSError:
+            pass
+
+    return jsonify({"ok": True, "user": user.to_public_dict()})
 
 
 @bp.get("/api/auth/my-reports")

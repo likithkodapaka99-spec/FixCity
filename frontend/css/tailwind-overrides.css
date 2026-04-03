@@ -1,0 +1,117 @@
+/* Leaflet map panes use z-index ~400-700; keep site nav above */
+body > nav.sticky {
+  z-index: 2000;
+}
+
+/* Tailwind helpers + Leaflet sizing (kept tiny on purpose) */
+
+/* Leaflet needs an explicit height */
+#map {
+  height: 420px;
+}
+
+@media (max-width: 640px) {
+  #map {
+    height: 320px;
+  }
+}
+
+/* Hide scrollbars in chat lists (optional) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Feed badges (injected via JS — plain CSS so styles work without Tailwind JIT on dynamic HTML) */
+.fc-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  line-height: 1rem;
+}
+.fc-badge--author { background: #fdf4ff; color: #86198f; border-color: #f5d0fe; }
+.fc-badge--muted { background: #f1f5f9; color: #334155; border-color: #e2e8f0; }
+.fc-badge--high { background: #fff1f2; color: #9f1239; border-color: #fecdd3; }
+.fc-badge--low { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+.fc-badge--med { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+
+.fc-suggestions {
+  margin-top: 1rem;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 1rem;
+}
+.fc-suggestions h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+.fc-suggestions ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+}
+.fc-suggestions li {
+  font-size: 0.875rem;
+  color: #334155;
+}
+
+.fc-community-wrap {
+  margin-top: 1.25rem;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  padding: 1rem;
+}
+.fc-community-inner {
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+  color: #475569;
+}
+
+/* Profile cards (match feed look; no dependency on Tailwind scanning JS) */
+.fc-profile-card {
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  margin-bottom: 1.5rem;
+}
+.fc-profile-card img {
+  height: 14rem;
+  width: 100%;
+  object-fit: cover;
+  display: block;
+}
+.fc-profile-card .fc-profile-body {
+  padding: 1.25rem;
+}
+.fc-profile-card .fc-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.fc-profile-card .fc-meta {
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+.fc-profile-placeholder {
+  height: 14rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 0.875rem;
+}

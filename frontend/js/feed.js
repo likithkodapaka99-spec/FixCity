@@ -1,11 +1,9 @@
 /**
- * FixCity — Posts / map / community (no report form). Used on / (index).
+ * FixCity — Posts / map / community.
  */
 (function () {
   const DEFAULT_MAP_CENTER = [20.5937, 78.9629];
   const DEFAULT_MAP_ZOOM = 5;
-  const LIVE_POLL_MS = 22000;
-  const LS_LIVE_POLL = "fixcity_live_poll";
   const fetchOpts = { credentials: "same-origin" };
 
   const feed = document.getElementById("feed");
@@ -14,12 +12,11 @@
   const btnNearby = document.getElementById("btn-nearby");
   const btnAll = document.getElementById("btn-all");
   const filterHint = document.getElementById("filter-hint");
-  const chkLive = document.getElementById("chk-live");
 
   let mapInstance = null;
   let markerLayer = null;
-  let livePollTimer = null;
   let currentNearFilter = null;
+  let currentUser = null;
 
   function getVoterKey() {
     try {
@@ -35,6 +32,32 @@
     } catch {
       return "anon-" + Math.random().toString(36).slice(2);
     }
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function showFlash(kind, message) {
+    if (!flash) return;
+    flash.hidden = false;
+    flash.textContent = message;
+    flash.className =
+      "mb-4 rounded-2xl border px-4 py-3 text-sm " +
+      (kind === "ok"
+        ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+        : "border-rose-200 bg-rose-50 text-rose-900");
+  }
+
+  function clearFlash() {
+    if (!flash) return;
+    flash.hidden = true;
+    flash.textContent = "";
+    flash.className = "";
   }
 
   function updateFilterHint() {
@@ -53,36 +76,13 @@
 
   function urgencyStyle(priority) {
     const p = (priority || "").toLowerCase();
-    if (p === "high") {
-      return {
-        fill: "#dc2626",
-        stroke: "#991b1b",
-        label: "High urgency",
-        radius: 14,
-      };
-    }
-    if (p === "medium") {
-      return {
-        fill: "#d97706",
-        stroke: "#b45309",
-        label: "Medium urgency",
-        radius: 11,
-      };
-    }
-    if (p === "low") {
-      return {
-        fill: "#059669",
-        stroke: "#047857",
-        label: "Low urgency",
-        radius: 9,
-      };
-    }
-    return {
-      fill: "#64748b",
-      stroke: "#475569",
-      label: "Unclassified",
-      radius: 8,
-    };
+    if (p === "high")
+      return { fill: "#dc2626", stroke: "#991b1b", label: "High", radius: 14 };
+    if (p === "medium")
+      return { fill: "#f59e0b", stroke: "#b45309", label: "Medium", radius: 11 };
+    if (p === "low")
+      return { fill: "#059669", stroke: "#047857", label: "Low", radius: 9 };
+    return { fill: "#64748b", stroke: "#475569", label: "Unclassified", radius: 8 };
   }
 
   function ensureMap() {
@@ -129,9 +129,7 @@
       const desc = String(r.description || "");
       const short = desc.slice(0, 110);
       const more = desc.length > short.length ? "…" : "";
-      const cat = r.issue_category
-        ? escapeHtml(String(r.issue_category))
-        : "—";
+      const cat = r.issue_category ? escapeHtml(String(r.issue_category)) : "—";
       const auth = escapeHtml(String(r.authority_status || "—"));
       m.bindPopup(
         "<strong>Report #" +
@@ -139,17 +137,16 @@
           "</strong><br>" +
           escapeHtml(short) +
           more +
-          "<br><span style=\"color:" +
-          u.fill +
-          "\">●</span> " +
+          "<br><small>" +
+          "Priority: " +
           escapeHtml(u.label) +
-          "<br><small>Category: " +
+          "<br>Category: " +
           cat +
           "<br>Authority: " +
           auth +
           '</small><br><a href="#report-' +
           escapeHtml(String(r.id)) +
-          '">Jump to card ↓</a> · <a href="/authority" target="_blank" rel="noopener">Console</a>'
+          '">Jump to card ↓</a>'
       );
       markerLayer.addLayer(m);
       pts.push([lat, lng]);
@@ -158,35 +155,17 @@
     if (pts.length === 1) {
       mapInstance.setView(pts[0], 14);
     } else if (pts.length > 1) {
-      mapInstance.fitBounds(L.latLngBounds(pts), {
-        padding: [40, 40],
-        maxZoom: 15,
-      });
+      mapInstance.fitBounds(L.latLngBounds(pts), { padding: [40, 40], maxZoom: 15 });
     } else {
       mapInstance.setView(DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM);
     }
     invalidateMapSoon();
   }
 
-  function showFlash(kind, message) {
-    if (!flash) return;
-    flash.hidden = false;
-    flash.textContent = message;
-    flash.className = "flash " + (kind === "ok" ? "flash--ok" : "flash--err");
-  }
-
-  function clearFlash() {
-    if (!flash) return;
-    flash.hidden = true;
-    flash.textContent = "";
-    flash.className = "flash";
-  }
-
   function formatWhen(iso) {
     if (!iso) return "";
     try {
-      const d = new Date(iso);
-      return d.toLocaleString(undefined, {
+      return new Date(iso).toLocaleString(undefined, {
         dateStyle: "medium",
         timeStyle: "short",
       });
@@ -195,71 +174,115 @@
     }
   }
 
+  function mapLinksHtml(lat, lng) {
+    if (lat == null || lng == null) {
+      return '<span class="text-slate-600">Location not set</span>';
+    }
+    var la = Number(lat);
+    var ln = Number(lng);
+    if (Number.isNaN(la) || Number.isNaN(ln)) {
+      return '<span class="text-slate-600">Location not set</span>';
+    }
+    var label = la.toFixed(5) + ", " + ln.toFixed(5);
+    var g =
+      "https://www.google.com/maps?q=" + encodeURIComponent(la + "," + ln);
+    var o =
+      "https://www.openstreetmap.org/?mlat=" +
+      encodeURIComponent(la) +
+      "&mlon=" +
+      encodeURIComponent(ln) +
+      "#map=16/" +
+      la +
+      "/" +
+      ln;
+    return (
+      '<span class="text-slate-600">' +
+      escapeHtml(label) +
+      '</span><br><span class="mt-1 inline-flex flex-wrap gap-x-2 gap-y-1">' +
+      '<a class="font-semibold text-brand-700 hover:underline" href="' +
+      escapeHtml(g) +
+      '" target="_blank" rel="noopener noreferrer">Google Maps</a>' +
+      '<span class="text-slate-400">·</span>' +
+      '<a class="font-semibold text-brand-700 hover:underline" href="' +
+      escapeHtml(o) +
+      '" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>' +
+      "</span>"
+    );
+  }
+
   function renderSuggestions(data) {
     const s = data.ai_suggestions;
     if (s == null) {
       return (
-        '<div class="solutions"><h3>Suggested actions</h3>' +
-        "<p class=\"meta\">No suggestions stored (older report). New reports get instant rule-based triage.</p></div>"
+        '<div class="fc-suggestions">' +
+        "<h4>Suggested actions</h4>" +
+        '<p style="margin:0;font-size:0.875rem;color:#475569;">No suggestions stored (older report). New reports get instant triage.</p>' +
+        "</div>"
       );
     }
-    if (Array.isArray(s)) {
-      if (s.length === 0) {
-        return (
-          '<div class="solutions"><h3>Suggested actions</h3><p class="meta">(empty list)</p></div>'
-        );
-      }
-      const items = s
+    var list = Array.isArray(s) ? s : typeof s === "string" ? [s] : [];
+    if (list.length) {
+      const items = list
+        .slice(0, 6)
         .map(function (x) {
           return "<li>" + escapeHtml(String(x)) + "</li>";
         })
         .join("");
       return (
-        '<div class="solutions"><h3>Suggested actions</h3><ul>' +
+        '<div class="fc-suggestions">' +
+        "<h4>Suggested actions</h4>" +
+        "<ul>" +
         items +
         "</ul></div>"
       );
     }
     return (
-      '<div class="solutions"><h3>Suggested actions</h3><pre class="meta">' +
-      escapeHtml(JSON.stringify(s, null, 2)) +
-      "</pre></div>"
+      '<div class="fc-suggestions">' +
+      "<h4>Suggested actions</h4>" +
+      '<p style="margin:0;font-size:0.875rem;color:#475569;">No suggestions available for this report.</p>' +
+      "</div>"
     );
   }
 
-  function escapeHtml(s) {
-    return String(s)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-  }
 
-  function priorityChip(p) {
-    if (!p) return '<span class="chip chip--muted">Priority: —</span>';
-    const cls =
-      p === "high"
-        ? "chip--danger"
-        : p === "medium"
-          ? ""
-          : "chip--ok";
+  function authorStripHtml(author) {
+    var name =
+      author && author.display_name ? String(author.display_name) : "Anonymous";
+    var url = author && author.avatar_url;
+    var initial = name.trim().slice(0, 1).toUpperCase() || "?";
+    var avatar = url
+      ? '<img class="h-10 w-10 shrink-0 rounded-full border border-slate-200 object-cover" src="' +
+        escapeHtml(url) +
+        '" alt="" />'
+      : '<span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-bold text-slate-600">' +
+        escapeHtml(initial) +
+        "</span>";
     return (
-      '<span class="chip ' +
-      cls +
-      '">Priority: ' +
-      escapeHtml(p) +
-      "</span>"
+      '<div class="flex items-center gap-3 border-b border-slate-100 bg-white px-5 py-3">' +
+      avatar +
+      '<span class="text-sm font-semibold text-slate-900">' +
+      escapeHtml(name) +
+      "</span></div>"
     );
+  }
+
+  function badge(text, kind) {
+    var cls = "fc-badge fc-badge--med";
+    if (kind === "author") cls = "fc-badge fc-badge--author";
+    else if (kind === "muted") cls = "fc-badge fc-badge--muted";
+    else if (kind === "high") cls = "fc-badge fc-badge--high";
+    else if (kind === "low") cls = "fc-badge fc-badge--low";
+    return '<span class="' + cls + '">' + escapeHtml(text) + "</span>";
   }
 
   function renderCommunityShell(id) {
     return (
-      '<section class="community">' +
-      '<h3 class="community__title">Community</h3>' +
-      '<div class="community__inner" data-report-id="' +
+      '<div class="fc-community-wrap">' +
+      '<p style="margin:0;font-size:0.875rem;font-weight:600;color:#0f172a;">Community</p>' +
+      '<div class="fc-community-inner community__inner" data-report-id="' +
       escapeHtml(String(id)) +
       '">Loading…</div>' +
-      "</section>"
+      "</div>"
     );
   }
 
@@ -267,28 +290,27 @@
     const v = c.vote_summary || {};
     const voteLine =
       v.count > 0
-        ? "Community urgency: <strong>" +
+        ? "Urgency: <strong>" +
           escapeHtml(String(v.average)) +
           "/5</strong> (" +
           v.count +
-          " vote" +
-          (v.count === 1 ? "" : "s") +
           ")"
-        : "No community urgency votes yet.";
-    const mine =
-      v.my_score != null
-        ? '<p class="meta">Your vote: ' +
-          escapeHtml(String(v.my_score)) +
-          "/5</p>"
-        : '<p class="meta">You have not voted on this report yet.</p>';
+        : "No urgency votes yet.";
 
     const volItems = (c.volunteers || [])
+      .slice(0, 5)
       .map(function (x) {
+        var av = x.avatar_url
+          ? '<img src="' +
+            escapeHtml(x.avatar_url) +
+            '" alt="" style="width:1.5rem;height:1.5rem;border-radius:9999px;object-fit:cover;vertical-align:middle;margin-right:0.35rem" />'
+          : "";
         return (
-          "<li>" +
+          '<li style="font-size:0.875rem;color:#334155">' +
+          av +
           escapeHtml(x.display_name) +
           (x.contact
-            ? ' — <span class="meta">' + escapeHtml(x.contact) + "</span>"
+            ? ' <span style="font-size:0.75rem;color:#64748b">(' + escapeHtml(x.contact) + ")</span>"
             : "") +
           "</li>"
         );
@@ -296,27 +318,33 @@
       .join("");
 
     const msgItems = (c.messages || [])
+      .slice(-8)
       .map(function (m) {
+        var mav = m.sender_avatar_url
+          ? '<img src="' +
+            escapeHtml(m.sender_avatar_url) +
+            '" alt="" style="width:1.5rem;height:1.5rem;border-radius:9999px;object-fit:cover;vertical-align:middle;margin-right:0.35rem" />'
+          : "";
         return (
-          "<li><strong>" +
+          '<li style="padding:0.5rem 0;border-bottom:1px solid #f1f5f9">' +
+          '<p style="margin:0;font-size:0.875rem">' +
+          mav +
+          '<span style="font-weight:600">' +
           escapeHtml(m.sender_name) +
-          '</strong> <span class="meta">' +
+          '</span> <span style="font-size:0.75rem;color:#64748b">' +
           escapeHtml(formatWhen(m.created_at)) +
-          "</span><br>" +
+          "</span></p>" +
+          '<p style="margin:0.25rem 0 0;font-size:0.875rem;color:#334155">' +
           escapeHtml(m.body) +
-          "</li>"
+          "</p></li>"
         );
       })
       .join("");
 
-    const msgBlock = msgItems
-      ? '<ul class="comm-msgs">' + msgItems + "</ul>"
-      : '<p class="meta">No messages yet — say you’re on the way or share updates.</p>';
-
     const voteBtns = [1, 2, 3, 4, 5]
       .map(function (s) {
         return (
-          '<button type="button" class="btn btn--ghost btn--sm vote-btn" data-report-id="' +
+          '<button type="button" class="vote-btn" style="border-radius:0.75rem;border:1px solid #e2e8f0;background:#fff;padding:0.35rem 0.6rem;font-size:0.75rem;font-weight:600;color:#334155;cursor:pointer" data-report-id="' +
           escapeHtml(reportId) +
           '" data-score="' +
           s +
@@ -328,35 +356,50 @@
       .join(" ");
 
     return (
-      '<div class="comm-block">' +
-      '<p class="comm-votes">' +
+      '<div style="display:flex;flex-direction:column;gap:1rem">' +
+      '<div style="font-size:0.875rem;color:#334155">' +
       voteLine +
-      "</p>" +
-      mine +
-      '<p class="meta">Rate how urgent this feels (1 = low, 5 = critical)</p>' +
-      '<div class="vote-row">' +
+      "</div>" +
+      '<div style="display:flex;flex-wrap:wrap;gap:0.5rem">' +
       voteBtns +
       "</div>" +
-      '<h4 class="comm-sub">Helpers (“I can help”)</h4>' +
+      '<div style="display:grid;gap:0.75rem;grid-template-columns:1fr">' +
+      '<form class="form-help" data-report-id="' +
+      escapeHtml(reportId) +
+      '" style="display:flex;flex-direction:column;gap:0.5rem">' +
+      '<p style="margin:0;font-size:0.875rem;font-weight:600">I can help</p>' +
+      (currentUser
+        ? '<input type="hidden" name="display_name" value="' +
+          escapeHtml(currentUser.display_name) +
+          '" />'
+        : '<input style="width:100%;border-radius:0.75rem;border:1px solid #e2e8f0;padding:0.5rem 0.75rem;font-size:0.875rem" name="display_name" placeholder="Your name" required maxlength="120" />') +
+      '<input style="width:100%;border-radius:0.75rem;border:1px solid #e2e8f0;padding:0.5rem 0.75rem;font-size:0.875rem" name="contact" placeholder="Contact (optional)" maxlength="255" />' +
+      '<button style="border-radius:0.75rem;background:#4f46e5;color:#fff;padding:0.5rem;font-size:0.875rem;font-weight:600;border:none;cursor:pointer" type="submit">Send</button>' +
+      "</form>" +
+      '<div>' +
+      '<p style="margin:0 0 0.5rem;font-size:0.875rem;font-weight:600">Volunteers</p>' +
       (volItems
-        ? '<ul class="comm-list">' + volItems + "</ul>"
-        : '<p class="meta">No volunteers yet — be the first.</p>') +
-      '<form class="form-help comm-form" data-report-id="' +
+        ? '<ul style="margin:0;padding-left:1.25rem">' + volItems + "</ul>"
+        : '<p style="margin:0;font-size:0.875rem;color:#64748b">No volunteers yet.</p>') +
+      "</div></div>" +
+      '<div>' +
+      '<p style="margin:0 0 0.5rem;font-size:0.875rem;font-weight:600">Chat</p>' +
+      (msgItems
+        ? '<ul style="margin:0;max-height:14rem;overflow:auto;list-style:none;padding:0;border:1px solid #e2e8f0;border-radius:0.75rem;background:#fff">' +
+          msgItems +
+          "</ul>"
+        : '<p style="margin:0;font-size:0.875rem;color:#64748b">No messages yet.</p>') +
+      '<form class="form-msg" data-report-id="' +
       escapeHtml(reportId) +
-      '">' +
-      '<label class="mini">Your name <input type="text" name="display_name" required maxlength="120" autocomplete="name" /></label>' +
-      '<label class="mini">Contact (optional) <input type="text" name="contact" maxlength="255" placeholder="phone, email, or social handle" autocomplete="tel" /></label>' +
-      '<button type="submit" class="btn btn--primary btn--sm">I can help</button>' +
-      "</form>" +
-      '<h4 class="comm-sub">Neighborhood chat</h4>' +
-      msgBlock +
-      '<form class="form-msg comm-form" data-report-id="' +
-      escapeHtml(reportId) +
-      '">' +
-      '<label class="mini">Name <input type="text" name="sender_name" required maxlength="120" autocomplete="nickname" /></label>' +
-      '<label class="field"><span class="field__label">Message</span><textarea name="body" rows="2" required maxlength="2000"></textarea></label>' +
-      '<button type="submit" class="btn btn--ghost btn--sm">Send</button>' +
-      "</form>" +
+      '" style="margin-top:0.5rem;display:flex;flex-direction:column;gap:0.5rem">' +
+      (currentUser
+        ? '<input type="hidden" name="sender_name" value="' +
+          escapeHtml(currentUser.display_name) +
+          '" />'
+        : '<input style="width:100%;border-radius:0.75rem;border:1px solid #e2e8f0;padding:0.5rem 0.75rem;font-size:0.875rem" name="sender_name" placeholder="Name" required maxlength="120" />') +
+      '<textarea style="width:100%;border-radius:0.75rem;border:1px solid #e2e8f0;padding:0.5rem 0.75rem;font-size:0.875rem" name="body" rows="2" placeholder="Message" required maxlength="2000"></textarea>' +
+      '<button style="border-radius:0.75rem;border:1px solid #e2e8f0;background:#fff;padding:0.5rem;font-size:0.875rem;font-weight:600;color:#334155;cursor:pointer" type="submit">Send</button>' +
+      "</form></div>" +
       "</div>"
     );
   }
@@ -381,7 +424,7 @@
       inner.innerHTML = buildCommunityHTML(data, String(reportId));
     } catch (e) {
       inner.innerHTML =
-        '<p class="meta">Could not load community data. Refresh to retry.</p>';
+        '<p style="font-size:0.875rem;color:#64748b">Could not load community.</p>';
       console.error(e);
     }
   }
@@ -396,58 +439,59 @@
 
   function renderCard(data) {
     const imgUrl = data.image_url || "";
-    const loc =
-      data.latitude != null && data.longitude != null
-        ? data.latitude.toFixed(5) + ", " + data.longitude.toFixed(5)
-        : "Location not set";
+    const hasLoc = data.latitude != null && data.longitude != null;
 
-    const authorChip =
-      data.author && data.author.display_name
-        ? '<span class="chip chip--author">' +
-          escapeHtml(data.author.display_name) +
-          "</span>"
-        : '<span class="chip chip--muted">No author (legacy)</span>';
+    const pri = (data.priority || "").toLowerCase();
+    const priChip =
+      pri === "high"
+        ? badge("Priority: high", "high")
+        : pri === "low"
+          ? badge("Priority: low", "low")
+          : badge("Priority: medium", "");
 
-    const cat = data.issue_category
-      ? '<span class="chip">' + escapeHtml(data.issue_category) + "</span>"
-      : '<span class="chip chip--muted">Category pending</span>';
-
-    const route = data.resolution_route
-      ? '<span class="chip">' +
-        escapeHtml(data.resolution_route) +
-        " path</span>"
-      : "";
+    const catChip = data.issue_category
+      ? badge(String(data.issue_category), "muted")
+      : badge("Category pending", "muted");
 
     const imgBlock = imgUrl
-      ? '<img class="card__media" src="' +
+      ? '<img class="h-56 w-full object-cover" src="' +
         escapeHtml(imgUrl) +
         '" alt="Report photo" loading="lazy" />'
-      : '<div class="card__media" role="img" aria-label="No photo"></div>';
+      : '<div class="h-56 w-full bg-slate-100 flex items-center justify-center text-sm text-slate-500">No photo</div>';
 
     return (
-      '<article class="card" id="report-' +
+      '<article class="mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" id="report-' +
       escapeHtml(String(data.id)) +
       '">' +
+      authorStripHtml(data.author) +
       imgBlock +
-      '<div class="card__body">' +
-      '<div class="chips">' +
-      authorChip +
-      cat +
-      priorityChip(data.priority) +
-      route +
+      '<div class="p-5">' +
+      '<div class="flex flex-wrap gap-2">' +
+      catChip +
+      priChip +
+      (data.resolution_route
+        ? badge(
+            String(data.resolution_route).toLowerCase() === "authority"
+              ? "Needs municipality"
+              : "Community can help",
+            "muted"
+          )
+        : "") +
       "</div>" +
-      "<p>" +
+      '<p class="mt-3 text-sm text-slate-800">' +
       escapeHtml(data.description || "") +
       "</p>" +
-      '<p class="meta"><strong>Status:</strong> ' +
+      '<div class="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-3">' +
+      '<div><span class="font-semibold">Status:</span> ' +
       escapeHtml(data.authority_status || "") +
-      "</p>" +
-      '<p class="meta"><strong>Reported:</strong> ' +
-      formatWhen(data.created_at) +
-      "</p>" +
-      '<p class="meta"><strong>GPS:</strong> ' +
-      escapeHtml(loc) +
-      "</p>" +
+      "</div>" +
+      '<div><span class="font-semibold">Reported:</span> ' +
+      escapeHtml(formatWhen(data.created_at)) +
+      "</div>" +
+      '<div class="sm:col-span-1"><span class="font-semibold">Location:</span> ' +
+      mapLinksHtml(hasLoc ? data.latitude : null, hasLoc ? data.longitude : null) +
+      "</div>" +
+      "</div>" +
       renderSuggestions(data) +
       renderCommunityShell(data.id) +
       "</div></article>"
@@ -458,7 +502,7 @@
     opts = opts || {};
     var silent = !!opts.silent;
     if (!silent && feed) {
-      feed.innerHTML = '<p class="meta">Loading…</p>';
+      feed.innerHTML = '<p class="text-sm text-slate-600">Loading…</p>';
     }
     try {
       var url = "/api/reports";
@@ -477,9 +521,8 @@
       const rows = payload.reports || [];
       if (!rows.length) {
         if (feed) {
-          feed.innerHTML = currentNearFilter
-            ? '<div class="empty">No GPS-tagged reports within this radius. Try “Show all” or add a report with location.</div>'
-            : '<div class="empty">No reports yet. <a href="/report">Submit the first one</a>.</div>';
+          feed.innerHTML =
+            '<div class="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-sm text-slate-700">No reports yet. <a class="font-semibold text-indigo-700 hover:underline" href="/report">Submit the first one</a>.</div>';
         }
         syncMap([]);
         invalidateMapSoon();
@@ -491,42 +534,11 @@
     } catch (e) {
       if (!silent && feed) {
         feed.innerHTML =
-          '<div class="empty">Could not reach the API. Start the backend (<code>python run.py</code>).</div>';
+          '<div class="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-900">Could not reach the API. Start the backend (<code>python run.py</code>).</div>';
         syncMap([]);
       }
       console.error(e);
     }
-  }
-
-  function scheduleLivePoll() {
-    if (livePollTimer) {
-      clearInterval(livePollTimer);
-      livePollTimer = null;
-    }
-    if (!chkLive || !chkLive.checked) return;
-    livePollTimer = setInterval(function () {
-      if (document.hidden) return;
-      loadReports({ silent: true });
-    }, LIVE_POLL_MS);
-  }
-
-  function initLivePollUi() {
-    if (!chkLive) return;
-    try {
-      if (localStorage.getItem(LS_LIVE_POLL) === "0") {
-        chkLive.checked = false;
-      }
-    } catch {
-      /* ignore */
-    }
-    chkLive.addEventListener("change", function () {
-      try {
-        localStorage.setItem(LS_LIVE_POLL, chkLive.checked ? "1" : "0");
-      } catch {
-        /* ignore */
-      }
-      scheduleLivePoll();
-    });
   }
 
   if (btnRefresh) btnRefresh.addEventListener("click", loadReports);
@@ -591,17 +603,15 @@
 
     feed.addEventListener("submit", async function (ev) {
       var form = ev.target;
-      if (
-        !form ||
-        !form.classList ||
-        (!form.classList.contains("form-help") &&
-          !form.classList.contains("form-msg"))
-      ) {
-        return;
-      }
-      ev.preventDefault();
+      if (!form || !form.classList) return;
       var rid = form.getAttribute("data-report-id");
       if (!rid) return;
+
+      if (!form.classList.contains("form-help") && !form.classList.contains("form-msg")) {
+        return;
+      }
+
+      ev.preventDefault();
 
       try {
         if (form.classList.contains("form-help")) {
@@ -613,10 +623,7 @@
             Object.assign({}, fetchOpts, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                display_name: name,
-                contact: contact,
-              }),
+              body: JSON.stringify({ display_name: name, contact: contact }),
             })
           );
           if (!res.ok) throw new Error("volunteer failed");
@@ -630,10 +637,7 @@
             Object.assign({}, fetchOpts, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                sender_name: sender,
-                body: body,
-              }),
+              body: JSON.stringify({ sender_name: sender, body: body }),
             })
           );
           if (!res2.ok) throw new Error("message failed");
@@ -649,14 +653,12 @@
 
   window.addEventListener("resize", invalidateMapSoon);
 
-  document.addEventListener("visibilitychange", function () {
-    if (!document.hidden) {
-      loadReports({ silent: true });
-    }
-  });
-
   updateFilterHint();
-  initLivePollUi();
-  loadReports();
-  scheduleLivePoll();
+  (async function initFeed() {
+    try {
+      var mr = await fetch("/api/auth/me", fetchOpts);
+      if (mr.ok) currentUser = await mr.json();
+    } catch (e) {}
+    loadReports();
+  })();
 })();

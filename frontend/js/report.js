@@ -1,6 +1,6 @@
-/**
- * FixCity — Report form only (/report). Location/GPS is OUTSIDE the auth-gated
- * fieldset so "Use my location" always works (only description/photo/submit need login).
+﻿/**
+ * FixCity — Report form only (/report).
+ * Location/GPS is outside the auth-gated fieldset so "Use my location" always works.
  */
 (function () {
   const fetchOpts = { credentials: "same-origin" };
@@ -22,14 +22,18 @@
     if (!flash) return;
     flash.hidden = false;
     flash.textContent = message;
-    flash.className = "flash " + (kind === "ok" ? "flash--ok" : "flash--err");
+    flash.className =
+      "mt-4 rounded-2xl border px-4 py-3 text-sm " +
+      (kind === "ok"
+        ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+        : "border-rose-200 bg-rose-50 text-rose-900");
   }
 
   function clearFlash() {
     if (!flash) return;
     flash.hidden = true;
     flash.textContent = "";
-    flash.className = "flash";
+    flash.className = "";
   }
 
   async function syncReportFormAuth() {
@@ -76,6 +80,7 @@
     ev.preventDefault();
     clearFlash();
     if (btnSubmit) btnSubmit.disabled = true;
+
     const fd = new FormData(form);
     if (!latInput.value.trim()) fd.delete("latitude");
     if (!lngInput.value.trim()) fd.delete("longitude");
@@ -103,14 +108,15 @@
         showFlash("err", (data && data.error) || "Submit failed.");
         return;
       }
-      showFlash("ok", "Report submitted! Opening community feed…");
+
+      showFlash("ok", "Report submitted! Redirecting to posts…");
       form.reset();
       latInput.value = "";
       lngInput.value = "";
       geoStatus.textContent = "No location yet";
       setTimeout(function () {
         window.location.href = "/";
-      }, 900);
+      }, 700);
     } catch (e) {
       showFlash("err", "Network error — is the Flask server running?");
       console.error(e);

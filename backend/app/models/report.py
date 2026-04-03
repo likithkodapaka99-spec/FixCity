@@ -72,7 +72,14 @@ class Report(db.Model):
             ts = ts.replace(tzinfo=timezone.utc)
         author = None
         if self.author:
-            author = {"display_name": self.author.display_name}
+            author = {
+                "display_name": self.author.display_name,
+                "avatar_url": (
+                    f"/uploads/{self.author.avatar_filename}"
+                    if self.author.avatar_filename
+                    else None
+                ),
+            }
         return {
             "id": self.id,
             "author": author,

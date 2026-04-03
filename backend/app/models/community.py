@@ -28,9 +28,16 @@ class VolunteerOffer(db.Model):
     )
     display_name = db.Column(db.String(120), nullable=False)
     contact = db.Column(db.String(255), nullable=True)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_utc_now)
 
     report = db.relationship("Report", back_populates="volunteers")
+    account = db.relationship("User", foreign_keys=[user_id])
 
 
 class UrgencyVote(db.Model):
@@ -68,6 +75,13 @@ class ReportMessage(db.Model):
     )
     sender_name = db.Column(db.String(120), nullable=False)
     body = db.Column(db.Text, nullable=False)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_utc_now)
 
     report = db.relationship("Report", back_populates="messages")
+    sender_account = db.relationship("User", foreign_keys=[user_id])

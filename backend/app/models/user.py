@@ -17,6 +17,9 @@ class User(db.Model):
     display_name = db.Column(db.String(120), nullable=False)
     email = db.Column(db.String(255), nullable=False, unique=True, index=True)
     password_hash = db.Column(db.String(256), nullable=False)
+    # citizen = normal app user; authority = municipality staff (municipality console)
+    role = db.Column(db.String(32), nullable=False, default="citizen", index=True)
+    avatar_filename = db.Column(db.String(255), nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
@@ -30,4 +33,8 @@ class User(db.Model):
             "id": self.id,
             "display_name": self.display_name,
             "email": self.email,
+            "role": self.role or "citizen",
+            "avatar_url": (
+                f"/uploads/{self.avatar_filename}" if self.avatar_filename else None
+            ),
         }

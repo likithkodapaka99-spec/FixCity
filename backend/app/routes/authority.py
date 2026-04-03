@@ -1,24 +1,19 @@
-"""
-STEP 8 — Fake “municipality” console: status pipeline + demo advances.
-
-No external APIs. Safe for hackathon storytelling + auto-refresh in the UI.
-"""
+"""Municipality console API — staff-only; manual status updates and deletions."""
 from __future__ import annotations
 
-import random
+import os
 import time
 from typing import Any
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request, session
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from app.extensions import db
-from app.models import Report
+from app.models import Report, User
 
 bp = Blueprint("authority", __name__)
 
-# Ticket lifecycle shown in the demo dashboard
 STATUS_PIPELINE: tuple[str, ...] = (
     "Sent to Municipality",
     "In Progress",
@@ -28,34 +23,28 @@ STATUS_PIPELINE: tuple[str, ...] = (
 ALLOWED_STATUSES: frozenset[str] = frozenset(STATUS_PIPELINE)
 
 
-def _normalize_status(value: str) -> str:
-    if value in ALLOWED_STATUSES:
-        return value
-    return STATUS_PIPELINE[0]
-
-
-def _next_status(current: str) -> str | None:
-    cur = _normalize_status(current)
-    idx = STATUS_PIPELINE.index(cur)
-    if idx >= len(STATUS_PIPELINE) - 1:
+def _staff_user() -> User | None:
+    uid = session.get("user_id")
+    if not uid:
         return None
-    return STATUS_PIPELINE[idx + 1]
+    user = db.session.get(User, int(uid))
+    if not user or getattr(user, "role", "citizen") != "authority":
+        return None
+    return user
 
 
-def _fake_pulse_message() -> str:
-    tick = int(time.time()) // 12
-    messages = [
-        "Municipality data link: simulated ✓",
-        "Dispatch queue refreshed (demo clock)",
-        "Crew roster: placeholder — morale high",
-        "GIS sync: not configured (expected for hackathon)",
-    ]
-    return messages[tick % len(messages)]
+def _require_staff() -> tuple[User | None, Any]:
+    u = _staff_user()
+    if not u:
+        return None, (jsonify({"error": "unauthorized", "login_url": "/authority/login"}), 401)
+    return u, None
 
 
 @bp.get("/api/authority/dashboard")
 def dashboard():
-    """Aggregated ticket counts + full report list for the ops view."""
+    err = _require_staff()
+    if err[1]:
+        return err[1]
     stmt = (
         select(Report)
         .options(joinedload(Report.author))
@@ -72,66 +61,16 @@ def dashboard():
             "stats": stats,
             "pipeline": list(STATUS_PIPELINE),
             "reports": [r.to_public_dict() for r in rows],
-            "fake_pulse": {
-                "message": _fake_pulse_message(),
-                "latency_ms": random.randint(28, 160),
-            },
-        }
-    )
-
-
-@bp.post("/api/authority/simulate")
-def simulate_tick():
-    """
-    Advance one open ticket one step along the pipeline (demo “time moving”).
-
-    JSON body optional: { "report_id": 12 } — if omitted, picks a random non-resolved row.
-    """
-    payload = request.get_json(silent=True) or {}
-    rid = payload.get("report_id")
-    row: Report | None
-
-    if rid is not None:
-        try:
-            rid_int = int(rid)
-        except (TypeError, ValueError):
-            return jsonify({"error": "report_id must be an integer"}), 400
-        row = db.session.get(Report, rid_int)
-        if row is None:
-            return jsonify({"error": "report not found"}), 404
-    else:
-        open_rows = db.session.scalars(
-            select(Report).where(Report.authority_status != STATUS_PIPELINE[-1])
-        ).all()
-        open_list = list(open_rows)
-        if not open_list:
-            return jsonify({"ok": True, "message": "Nothing to advance — all resolved."})
-        row = random.choice(open_list)
-
-    nxt = _next_status(row.authority_status)
-    if nxt is None:
-        return jsonify(
-            {
-                "ok": True,
-                "message": f"Report #{row.id} is already at terminal status.",
-                "report": row.to_public_dict(),
-            }
-        )
-
-    row.authority_status = nxt
-    db.session.commit()
-    return jsonify(
-        {
-            "ok": True,
-            "message": f'Report #{row.id} moved to "{nxt}" (simulation).',
-            "report": row.to_public_dict(),
         }
     )
 
 
 @bp.patch("/api/authority/reports/<int:report_id>")
 def patch_report_status(report_id: int):
-    """Manual override for judges / presenters: { "authority_status": "In Progress" }"""
+    err = _require_staff()
+    if err[1]:
+        return err[1]
+
     row = db.session.get(Report, report_id)
     if row is None:
         return jsonify({"error": "not found"}), 404
@@ -151,3 +90,27 @@ def patch_report_status(report_id: int):
     row.authority_status = status
     db.session.commit()
     return jsonify({"ok": True, "report": row.to_public_dict()})
+
+
+@bp.delete("/api/authority/reports/<int:report_id>")
+def delete_report(report_id: int):
+    err = _require_staff()
+    if err[1]:
+        return err[1]
+
+    row = db.session.get(Report, report_id)
+    if row is None:
+        return jsonify({"error": "not found"}), 404
+
+    if row.image_filename:
+        folder = current_app.config["UPLOAD_FOLDER"]
+        path = os.path.join(folder, row.image_filename)
+        if os.path.isfile(path):
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+
+    db.session.delete(row)
+    db.session.commit()
+    return jsonify({"ok": True, "deleted_id": report_id})
