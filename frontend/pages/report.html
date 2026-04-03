@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Report a problem — FixCity</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <nav class="site-nav">
+      <a class="site-nav__brand" href="/"><strong>FixCity</strong></a>
+      <div id="nav-mount" class="site-nav__mount"></div>
+    </nav>
+
+    <header class="hero hero--compact">
+      <div class="hero__inner">
+        <h1>Report a problem</h1>
+        <p class="lede">
+          <strong>Location</strong> works even before you log in.
+          <strong>Description &amp; photo</strong> require an account.
+        </p>
+        <p class="hero__cta">
+          <a class="btn btn--ghost btn--sm" href="/">← Back to posts</a>
+        </p>
+      </div>
+    </header>
+
+    <main class="auth-main report-page-main">
+      <section class="panel auth-panel">
+        <p id="report-auth-hint" class="hint auth-gate">
+          <a href="/login">Log in</a> or <a href="/signup">sign up</a> to
+          finish and submit — your posts appear on
+          <a href="/profile">your profile</a>.
+        </p>
+
+        <div id="flash" class="flash" role="status" aria-live="polite" hidden></div>
+
+        <form id="report-form" class="form">
+          <!-- GPS outside fieldset so the button is never disabled by login gate -->
+          <div class="field location-unlocked">
+            <span class="field__label">Location (optional)</span>
+            <div class="row">
+              <button type="button" class="btn btn--ghost" id="btn-geo">
+                Use my location
+              </button>
+              <span id="geo-status" class="geo-status">No location yet</span>
+            </div>
+            <div class="coords row">
+              <label class="mini">
+                Latitude
+                <input type="text" id="lat-lab" name="latitude" readonly />
+              </label>
+              <label class="mini">
+                Longitude
+                <input type="text" id="lng-lab" name="longitude" readonly />
+              </label>
+            </div>
+            <p class="hint">
+              Allow location when the browser asks. If it fails, check site
+              permissions (lock icon in the address bar).
+            </p>
+          </div>
+
+          <fieldset id="report-fieldset" class="report-fieldset" disabled>
+            <label class="field">
+              <span class="field__label">Description</span>
+              <textarea
+                name="description"
+                rows="4"
+                required
+                placeholder="e.g. Deep pothole near the school gate — vehicles swerving..."
+              ></textarea>
+            </label>
+
+            <label class="field">
+              <span class="field__label">Photo (optional)</span>
+              <input type="file" name="image" accept="image/*" />
+            </label>
+
+            <button type="submit" class="btn btn--primary" id="btn-submit">
+              Submit report
+            </button>
+          </fieldset>
+        </form>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p><a href="/">Community posts</a> · <a href="/profile">My profile</a></p>
+    </footer>
+
+    <script src="/js/nav.js" defer></script>
+    <script src="/js/report.js" defer></script>
+  </body>
+</html>

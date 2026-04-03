@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sign up — FixCity</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <nav class="site-nav">
+      <a class="site-nav__brand" href="/"><strong>FixCity</strong></a>
+      <div id="nav-mount" class="site-nav__mount"></div>
+    </nav>
+
+    <main class="auth-main">
+      <section class="panel auth-panel">
+        <h1>Create an account</h1>
+        <p class="hint">Name, email, and password are stored securely (hashed).</p>
+        <div id="flash" class="flash" role="status" aria-live="polite" hidden></div>
+        <form id="signup-form" class="form">
+          <label class="field">
+            <span class="field__label">Full name</span>
+            <input type="text" name="display_name" required maxlength="120" autocomplete="name" />
+          </label>
+          <label class="field">
+            <span class="field__label">Email</span>
+            <input type="email" name="email" required maxlength="255" autocomplete="email" />
+          </label>
+          <label class="field">
+            <span class="field__label">Password</span>
+            <input
+              type="password"
+              name="password"
+              required
+              minlength="6"
+              autocomplete="new-password"
+            />
+          </label>
+          <button type="submit" class="btn btn--primary">Sign up</button>
+        </form>
+        <p class="hint">
+          Already have an account? <a href="/login">Log in</a>
+        </p>
+      </section>
+    </main>
+
+    <script src="/js/nav.js" defer></script>
+    <script>
+      (function () {
+        var form = document.getElementById("signup-form");
+        var flash = document.getElementById("flash");
+        function show(msg, ok) {
+          flash.hidden = false;
+          flash.textContent = msg;
+          flash.className = "flash " + (ok ? "flash--ok" : "flash--err");
+        }
+        form.addEventListener("submit", async function (e) {
+          e.preventDefault();
+          var fd = new FormData(form);
+          var body = {
+            display_name: (fd.get("display_name") || "").toString().trim(),
+            email: (fd.get("email") || "").toString().trim(),
+            password: (fd.get("password") || "").toString(),
+          };
+          try {
+            var res = await fetch("/api/auth/signup", {
+              method: "POST",
+              credentials: "same-origin",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(body),
+            });
+            var data = await res.json().catch(function () {
+              return {};
+            });
+            if (!res.ok) {
+              show(data.error || "Sign up failed.", false);
+              return;
+            }
+            show("Welcome! Redirecting…", true);
+            window.location.href = "/profile";
+          } catch (err) {
+            show("Network error. Is the server running?", false);
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>

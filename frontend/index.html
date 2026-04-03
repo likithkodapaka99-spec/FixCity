@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FixCity — Community posts &amp; map</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      crossorigin=""
+    />
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <nav class="site-nav">
+      <a class="site-nav__brand" href="/"><strong>FixCity</strong></a>
+      <div id="nav-mount" class="site-nav__mount"></div>
+    </nav>
+
+    <header class="hero">
+      <div class="hero__inner">
+        <p class="eyebrow">Hackathon demo</p>
+        <h1>Neighborhood posts</h1>
+        <p class="lede">
+          Browse problems on the map and in the feed. See triage, community
+          votes, and chat on each card.
+        </p>
+        <p class="hero__cta">
+          <a class="btn btn--primary" href="/report">Report a new problem</a>
+          <a class="btn btn--ghost" href="/profile">My profile</a>
+        </p>
+      </div>
+    </header>
+
+    <main class="layout layout--feed">
+      <section class="panel feed-panel" aria-labelledby="feed-title">
+        <div id="flash" class="flash" role="status" aria-live="polite" hidden></div>
+
+        <div class="panel__head">
+          <h2 id="feed-title">All posts</h2>
+          <div class="panel__actions">
+            <button type="button" class="btn btn--ghost btn--sm" id="btn-nearby">
+              Near me (10 km)
+            </button>
+            <button type="button" class="btn btn--ghost btn--sm" id="btn-all">
+              Show all
+            </button>
+            <button type="button" class="btn btn--ghost btn--sm" id="btn-refresh">
+              Refresh
+            </button>
+          </div>
+        </div>
+        <p id="filter-hint" class="hint filter-hint" hidden></p>
+        <label class="live-poll-label hint">
+          <input type="checkbox" id="chk-live" checked />
+          <span
+            ><strong>Demo live sync</strong> (~22s):
+            <a href="/authority">Authority console</a> status updates appear
+            here automatically.</span
+          >
+        </label>
+        <p class="hint">
+          Newest first. Dots follow triage <strong>priority</strong>.
+          <a href="/report">Submit your own report →</a>
+        </p>
+
+        <div class="map-panel">
+          <h3 class="map-title">Urgency map</h3>
+          <p class="hint map-caption">
+            OpenStreetMap. Only posts with GPS show as markers.
+          </p>
+          <div class="map-legend" aria-label="Marker colors by urgency">
+            <span class="leg-item"><i class="sw sw--high"></i> High</span>
+            <span class="leg-item"><i class="sw sw--med"></i> Medium</span>
+            <span class="leg-item"><i class="sw sw--low"></i> Low</span>
+            <span class="leg-item"><i class="sw sw--na"></i> Unclassified</span>
+          </div>
+          <div
+            id="map"
+            class="map"
+            role="application"
+            aria-label="Map of reported problems"
+          ></div>
+        </div>
+
+        <div id="feed" class="feed" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>
+        <a href="/report">New report</a> ·
+        <a href="/authority">Authority console</a> ·
+        <a href="/signup">Sign up</a>
+      </p>
+    </footer>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      crossorigin=""
+    ></script>
+    <script src="/js/nav.js" defer></script>
+    <script src="/js/feed.js" defer></script>
+  </body>
+</html>

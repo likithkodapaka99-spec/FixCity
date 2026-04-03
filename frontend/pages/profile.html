@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>My posts — FixCity</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <nav class="site-nav">
+      <a class="site-nav__brand" href="/"><strong>FixCity</strong></a>
+      <div id="nav-mount" class="site-nav__mount"></div>
+    </nav>
+
+    <main class="profile-main">
+      <header class="profile-header">
+        <h1 id="profile-title">My activity</h1>
+        <p id="profile-sub" class="hint">Loading…</p>
+      </header>
+
+      <div id="profile-feed" class="social-feed" aria-live="polite"></div>
+    </main>
+
+    <footer class="footer">
+      <p><a href="/">Back to map &amp; feed</a></p>
+    </footer>
+
+    <script src="/js/nav.js" defer></script>
+    <script src="/js/profile.js" defer></script>
+  </body>
+</html>

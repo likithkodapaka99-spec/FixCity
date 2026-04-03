@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FixCity — Authority console (demo)</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body class="dash-body">
+    <nav class="site-nav">
+      <a class="site-nav__brand" href="/"><strong>FixCity</strong></a>
+      <div id="nav-mount" class="site-nav__mount"></div>
+    </nav>
+
+    <header class="dash-header">
+      <div class="dash-header__inner">
+        <p class="eyebrow dash-eyebrow">STEP 8 · simulated operations</p>
+        <h1>Municipality console</h1>
+        <p class="dash-lede">
+          This page polls every ~7s. The public reporter can also enable
+          <strong>Demo live sync</strong> (~22s) so ticket status changes here
+          show up on the map and cards without a manual refresh.
+        </p>
+        <p class="dash-actions">
+          <a class="btn btn--ghost btn--sm" href="/">← Public reporter</a>
+          <button type="button" class="btn btn--primary btn--sm" id="btn-sim">
+            Advance random ticket
+          </button>
+          <button type="button" class="btn btn--ghost btn--sm" id="btn-now">
+            Refresh now
+          </button>
+        </p>
+      </div>
+    </header>
+
+    <main class="dash-main">
+      <section class="panel dash-pulse" aria-live="polite">
+        <div class="panel__head">
+          <h2>Signal desk</h2>
+          <span id="pulse-time" class="meta"></span>
+        </div>
+        <p id="pulse-msg" class="dash-pulse__msg">Loading…</p>
+        <p id="pulse-meta" class="meta"></p>
+      </section>
+
+      <section class="dash-metrics" id="dash-stats" aria-label="Ticket counts"></section>
+
+      <section class="panel">
+        <div class="panel__head">
+          <h2>Live ticket queue</h2>
+          <span id="row-count" class="meta"></span>
+        </div>
+        <div class="table-wrap">
+          <table class="dash-table" id="dash-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Status</th>
+                <th>Category</th>
+                <th>Priority</th>
+                <th>Route</th>
+                <th>Summary</th>
+              </tr>
+            </thead>
+            <tbody id="dash-tbody"></tbody>
+          </table>
+        </div>
+        <p class="hint">
+          Manual story beat: PATCH
+          <code>/api/authority/reports/&lt;id&gt;</code> with JSON
+          <code>{"authority_status":"In Progress"}</code> if you want scripted
+          transitions.
+        </p>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>
+        Demo only — no real municipality integration ·
+        <a href="/">Back to FixCity</a>
+      </p>
+    </footer>
+
+    <script src="/js/nav.js" defer></script>
+    <script src="/js/authority-dashboard.js" defer></script>
+  </body>
+</html>

@@ -1,0 +1,13 @@
+# FixCity — local dev / hackathon
+backend/.venv/
+backend/venv/
+backend/**/__pycache__/
+*.py[cod]
+*$py.class
+backend/instance/*.db
+backend/instance/session_secret.txt
+backend/uploads/*
+!backend/uploads/.gitkeep
+.DS_Store
+Thumbs.db
+*.log

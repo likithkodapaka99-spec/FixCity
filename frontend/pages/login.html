@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Log in — FixCity</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <nav class="site-nav">
+      <a class="site-nav__brand" href="/"><strong>FixCity</strong></a>
+      <div id="nav-mount" class="site-nav__mount"></div>
+    </nav>
+
+    <main class="auth-main">
+      <section class="panel auth-panel">
+        <h1>Log in</h1>
+        <p class="hint">Use the email and password you signed up with.</p>
+        <div id="flash" class="flash" role="status" aria-live="polite" hidden></div>
+        <form id="login-form" class="form">
+          <label class="field">
+            <span class="field__label">Email</span>
+            <input type="email" name="email" required autocomplete="email" />
+          </label>
+          <label class="field">
+            <span class="field__label">Password</span>
+            <input type="password" name="password" required autocomplete="current-password" />
+          </label>
+          <button type="submit" class="btn btn--primary">Log in</button>
+        </form>
+        <p class="hint">
+          New here? <a href="/signup">Create an account</a>
+        </p>
+      </section>
+    </main>
+
+    <script src="/js/nav.js" defer></script>
+    <script>
+      (function () {
+        var form = document.getElementById("login-form");
+        var flash = document.getElementById("flash");
+        function show(msg, ok) {
+          flash.hidden = false;
+          flash.textContent = msg;
+          flash.className = "flash " + (ok ? "flash--ok" : "flash--err");
+        }
+        form.addEventListener("submit", async function (e) {
+          e.preventDefault();
+          var fd = new FormData(form);
+          var body = {
+            email: (fd.get("email") || "").toString().trim(),
+            password: (fd.get("password") || "").toString(),
+          };
+          try {
+            var res = await fetch("/api/auth/login", {
+              method: "POST",
+              credentials: "same-origin",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(body),
+            });
+            var data = await res.json().catch(function () {
+              return {};
+            });
+            if (!res.ok) {
+              show(data.error || "Login failed.", false);
+              return;
+            }
+            show("Success! Redirecting…", true);
+            window.location.href = "/profile";
+          } catch (err) {
+            show("Network error.", false);
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>

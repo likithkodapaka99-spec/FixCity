@@ -1,0 +1,5 @@
+# Local Problem Reporter — backend
+Flask>=3.0,<4
+flask-cors>=4.0,<5
+Flask-SQLAlchemy>=3.1,<4
+Werkzeug>=3.0,<4
