@@ -1,4 +1,4 @@
-# FixCity — local dev / hackathon
+﻿# FixCity — local dev / hackathon
 backend/.venv/
 backend/venv/
 backend/**/__pycache__/
